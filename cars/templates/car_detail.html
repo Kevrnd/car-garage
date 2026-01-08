@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ car.brand }} {{ car.model }} - Учет ремонта авто</title>
+    {% load static %}
+    <link rel="icon" type="image/png" href="{% static 'images/favicon.png' %}">
+    <link rel="shortcut icon" type="image/png" href="{% static 'images/favicon.png' %}">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Symbols+Outlined">
+</head>
+<body>
+    <!-- App Bar -->
+    <header class="app-bar">
+        <div class="app-bar-content">
+            <div style="display: flex; align-items: center; gap: 16px;">
+                <a href="/" class="icon-button" title="Назад к гаражу" style="text-decoration: none; color: inherit;">
+                    <span class="material-symbols-outlined">arrow_back</span>
+                </a>
+                <h1 class="app-title">
+                    <span class="material-symbols-outlined">directions_car</span>
+                    {{ car.brand }} {{ car.model }}
+                </h1>
+            </div>
+            <div style="display: flex; align-items: center; gap: 16px;">
+                <span style="font-size: 14px;">{{ user.username }}</span>
+                <a href="{% url 'logout' %}" class="icon-button" title="Выйти">
+                    <span class="material-symbols-outlined">logout</span>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container">
+            <!-- Car Info Card -->
+            <div class="car-details-card">
+                <div class="car-details-header">
+                    <div class="car-details-icon">
+                        <span class="material-symbols-outlined">directions_car</span>
+                    </div>
+                    <div class="car-details-title-section">
+                        <h2>{{ car.brand }} {{ car.model }}</h2>
+                        <div class="car-details-subtitle">
+                            <span class="material-symbols-outlined">badge</span>
+                            <span>VIN: {{ car.vin }}</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="car-details-info-grid">
+                    {% if car.year %}
+                    <div class="car-info-badge">
+                        <span class="material-symbols-outlined">calendar_today</span>
+                        <span>Год: {{ car.year }}</span>
+                    </div>
+                    {% endif %}
+                    {% if car.power %}
+                    <div class="car-info-badge">
+                        <span class="material-symbols-outlined">bolt</span>
+                        <span>Мощность: {{ car.power }} л.с.</span>
+                    </div>
+                    {% endif %}
+                    {% if car.tire_front or car.tire_rear %}
+                    <div class="car-info-badge">
+                        <span class="material-symbols-outlined">tire_repair</span>
+                        <span>
+                            {% if car.tire_front %}Перед: {{ car.tire_front }}{% endif %}
+                            {% if car.tire_front and car.tire_rear %} | {% endif %}
+                            {% if car.tire_rear %}Зад: {{ car.tire_rear }}{% endif %}
+                        </span>
+                    </div>
+                    {% endif %}
+                    {% if car.wipers %}
+                    <div class="car-info-badge">
+                        <span class="material-symbols-outlined">wipers</span>
+                        <span>Дворники: {{ car.wipers }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+                {% if car.notes %}
+                <div class="car-notes">
+                    <strong>Заметки:</strong>
+                    <p>{{ car.notes }}</p>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Repairs Section -->
+            <div class="repairs-section">
+                <div class="section-header">
+                    <div>
+                        <h3>Записи о ремонте</h3>
+                        <div class="total-cost-info">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span class="material-symbols-outlined">payments</span>
+                                <span>Общая стоимость работ: <strong id="total-work-cost">0.00</strong> ₽</span>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 8px; margin-top: 8px;">
+                                <span class="material-symbols-outlined">build</span>
+                                <span>Общая стоимость запчастей: <strong id="total-parts-cost">0.00</strong> ₽</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 8px;">
+                        <button class="btn btn-secondary btn-small" id="report-btn">
+                            <span class="material-symbols-outlined">description</span>
+                            Отчет
+                        </button>
+                        <button class="btn btn-secondary btn-small" id="view-stock-btn">
+                            <span class="material-symbols-outlined">warehouse</span>
+                            Запчасти на складе
+                        </button>
+                        <button class="btn btn-secondary btn-small" id="add-stock-part-main-btn">
+                            <span class="material-symbols-outlined">inventory</span>
+                            Добавить запчасть на склад
+                        </button>
+                        <button class="btn btn-primary btn-small" id="add-repair-btn">
+                            <span class="material-symbols-outlined">add</span>
+                            Добавить запись
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="repairs-table-container">
+                    <table class="repairs-table" id="repairs-table">
+                        <thead>
+                            <tr>
+                                <th>Дата</th>
+                                <th>Пробег (км)</th>
+                                <th>Выполненные работы</th>
+                                <th>Стоимость работ</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody id="repairs-table-body">
+                            <tr>
+                                <td colspan="5" class="empty-table">Загрузка...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal: Add/Edit Repair Record -->
+    <div id="repair-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="repair-modal-title">Добавить запись о ремонте</h2>
+                <button class="modal-close" id="close-repair-modal">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            <form id="repair-form" class="car-form">
+                {% csrf_token %}
+                <input type="hidden" id="repair-id" name="id">
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="repair-date">Дата *</label>
+                        <input type="date" id="repair-date" name="date" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="repair-mileage">Пробег (км) *</label>
+                        <input type="number" id="repair-mileage" name="mileage" min="0" required placeholder="Например: 50000">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="repair-work-description">Выполненные работы *</label>
+                    <textarea id="repair-work-description" name="work_description" rows="4" required placeholder="Опишите выполненные работы..."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="repair-work-cost">Стоимость работ (₽) *</label>
+                    <input type="number" id="repair-work-cost" name="work_cost" min="0" step="0.01" required placeholder="Например: 5000.00">
+                </div>
+
+                <div class="form-group">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <label>Запчасти со склада</label>
+                        <button type="button" class="btn btn-secondary btn-small" id="manage-stock-btn" style="padding: 4px 12px; font-size: 12px;">
+                            <span class="material-symbols-outlined" style="font-size: 16px;">inventory</span>
+                            Управление складом
+                        </button>
+                    </div>
+                    <div id="stock-parts-selection" class="stock-parts-selection">
+                        <div id="stock-parts-list" class="stock-parts-list">
+                            <p style="color: var(--md-sys-color-on-surface-variant); font-size: 14px; text-align: center; padding: 16px;">
+                                Загрузка запчастей со склада...
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" id="cancel-repair-btn">Отмена</button>
+                    <button type="submit" class="btn btn-primary">Сохранить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: Parts List for Repair Record -->
+    <div id="parts-modal" class="modal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h2 id="parts-modal-title">Использованные запчасти</h2>
+                <button class="modal-close" id="close-parts-modal">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            <div class="parts-content">
+                <div class="section-header">
+                    <h3 id="parts-repair-info"></h3>
+                    <div style="display: flex; gap: 8px;">
+                        <button class="btn btn-secondary btn-small" id="add-stock-parts-btn">
+                            <span class="material-symbols-outlined">inventory</span>
+                            Добавить со склада
+                        </button>
+                        <button class="btn btn-primary btn-small" id="add-part-btn">
+                            <span class="material-symbols-outlined">add</span>
+                            Добавить запчасть
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="stock-parts-selection-in-parts-modal" class="stock-parts-selection" style="display: none; margin-bottom: 16px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <label style="font-weight: 500;">Выберите запчасти со склада</label>
+                        <button type="button" class="btn btn-primary btn-small" id="add-selected-stock-parts-btn" style="padding: 4px 12px; font-size: 12px;">
+                            <span class="material-symbols-outlined" style="font-size: 16px;">add</span>
+                            Добавить выбранные
+                        </button>
+                    </div>
+                    <div id="stock-parts-list-in-parts-modal" class="stock-parts-list">
+                        <p style="color: var(--md-sys-color-on-surface-variant); font-size: 14px; text-align: center; padding: 16px;">
+                            Загрузка запчастей со склада...
+                        </p>
+                    </div>
+                </div>
+                
+                <table class="parts-table" id="parts-table">
+                    <thead>
+                        <tr>
+                            <th>Наименование</th>
+                            <th>Код детали</th>
+                            <th>Производитель</th>
+                            <th>Количество</th>
+                            <th>Стоимость за ед. (₽)</th>
+                            <th>Итого (₽)</th>
+                            <th>Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody id="parts-table-body">
+                        <tr>
+                            <td colspan="5" class="empty-table">Нет запчастей</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Add/Edit Part -->
+    <div id="part-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="part-modal-title">Добавить запчасть</h2>
+                <button class="modal-close" id="close-part-modal">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            <form id="part-form" class="car-form">
+                {% csrf_token %}
+                <input type="hidden" id="part-id" name="id">
+                
+                <div class="form-group">
+                    <label for="part-name">Наименование *</label>
+                    <input type="text" id="part-name" name="name" required placeholder="Например: Тормозные колодки передние">
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="part-code">Код детали *</label>
+                        <input type="text" id="part-code" name="part_code" required placeholder="Например: ABC123">
+                    </div>
+                    <div class="form-group">
+                        <label for="part-manufacturer">Производитель *</label>
+                        <input type="text" id="part-manufacturer" name="manufacturer" required placeholder="Например: Bosch">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="part-quantity">Количество *</label>
+                        <input type="number" id="part-quantity" name="quantity" min="1" value="1" required placeholder="Например: 2">
+                    </div>
+                    <div class="form-group">
+                        <label for="part-cost">Стоимость за единицу (₽) *</label>
+                        <input type="number" id="part-cost" name="cost" min="0" step="0.01" required placeholder="Например: 1500.00">
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" id="cancel-part-btn">Отмена</button>
+                    <button type="submit" class="btn btn-primary">Сохранить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: Report -->
+    <div id="report-modal" class="modal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h2>Отчет о ремонте</h2>
+                <button class="modal-close" id="close-report-modal">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            <div class="report-content">
+                <div class="report-filters">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="report-date-from">Дата с</label>
+                            <input type="date" id="report-date-from" name="date_from">
+                        </div>
+                        <div class="form-group">
+                            <label for="report-date-to">Дата по</label>
+                            <input type="date" id="report-date-to" name="date_to">
+                        </div>
+                    </div>
+                    <div class="form-actions" style="margin-top: 16px;">
+                        <button type="button" class="btn btn-secondary" id="cancel-report-btn">Отмена</button>
+                        <button type="button" class="btn btn-primary" id="generate-report-btn">Сформировать отчет</button>
+                    </div>
+                    <div class="form-actions" style="margin-top: 12px;">
+                        <button type="button" class="btn btn-secondary" id="export-excel-btn" style="display: none;">
+                            <span class="material-symbols-outlined">download</span>
+                            Экспорт в Excel
+                        </button>
+                    </div>
+                </div>
+                <div id="report-results" style="margin-top: 24px; display: none;">
+                    <div class="report-summary">
+                        <h3>Итого за период:</h3>
+                        <div class="report-summary-item">
+                            <span>Количество записей:</span>
+                            <strong id="report-records-count">0</strong>
+                        </div>
+                        <div class="report-summary-item">
+                            <span>Общая стоимость работ:</span>
+                            <strong id="report-total-work-cost">0.00</strong> ₽
+                        </div>
+                        <div class="report-summary-item">
+                            <span>Общая стоимость запчастей:</span>
+                            <strong id="report-total-parts-cost">0.00</strong> ₽
+                        </div>
+                        <div class="report-summary-item report-total">
+                            <span>Итого:</span>
+                            <strong id="report-total-cost">0.00</strong> ₽
+                        </div>
+                    </div>
+                    <div id="report-details" style="margin-top: 24px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Stock Management -->
+    <div id="stock-modal" class="modal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h2>Управление складом запчастей</h2>
+                <button class="modal-close" id="close-stock-modal">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            <div class="stock-content">
+                <div class="section-header">
+                    <h3>Запчасти на складе</h3>
+                    <button class="btn btn-primary btn-small" id="add-stock-part-btn">
+                        <span class="material-symbols-outlined">add</span>
+                        Добавить запчасть
+                    </button>
+                </div>
+                
+                <table class="parts-table" id="stock-parts-table">
+                    <thead>
+                        <tr>
+                            <th>Наименование</th>
+                            <th>Код детали</th>
+                            <th>Производитель</th>
+                            <th>Количество</th>
+                            <th>Стоимость за ед. (₽)</th>
+                            <th>Итого (₽)</th>
+                            <th>Дата покупки</th>
+                            <th>Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody id="stock-parts-table-body">
+                        <tr>
+                            <td colspan="6" class="empty-table">Загрузка...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Add/Edit Stock Part -->
+    <div id="stock-part-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="stock-part-modal-title">Добавить запчасть на склад</h2>
+                <button class="modal-close" id="close-stock-part-modal">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            <form id="stock-part-form" class="car-form">
+                {% csrf_token %}
+                <input type="hidden" id="stock-part-id" name="id">
+                
+                <div class="form-group">
+                    <label for="stock-part-name">Наименование *</label>
+                    <input type="text" id="stock-part-name" name="name" required placeholder="Например: Тормозные колодки передние">
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="stock-part-code">Код детали *</label>
+                        <input type="text" id="stock-part-code" name="part_code" required placeholder="Например: ABC123">
+                    </div>
+                    <div class="form-group">
+                        <label for="stock-part-manufacturer">Производитель *</label>
+                        <input type="text" id="stock-part-manufacturer" name="manufacturer" required placeholder="Например: Bosch">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="stock-part-quantity">Количество *</label>
+                        <input type="number" id="stock-part-quantity" name="quantity" min="1" value="1" required placeholder="Например: 2">
+                    </div>
+                    <div class="form-group">
+                        <label for="stock-part-cost">Стоимость за единицу (₽)</label>
+                        <input type="number" id="stock-part-cost" name="cost" min="0" step="0.01" placeholder="Например: 1500.00">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="stock-part-purchase-date">Дата покупки</label>
+                    <input type="date" id="stock-part-purchase-date" name="purchase_date">
+                </div>
+
+                <div class="form-group">
+                    <label for="stock-part-notes">Заметки</label>
+                    <textarea id="stock-part-notes" name="notes" rows="3" placeholder="Дополнительная информация..."></textarea>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" id="cancel-stock-part-btn">Отмена</button>
+                    <button type="submit" class="btn btn-primary">Сохранить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Car ID from template
+        const CAR_ID = {{ car.id }};
+    </script>
+    <script src="{% static 'js/car_detail.js' %}"></script>
+</body>
+</html>
+

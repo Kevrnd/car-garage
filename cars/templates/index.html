@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Учет ремонта авто</title>
+    {% load static %}
+    <link rel="icon" type="image/png" href="{% static 'images/favicon.png' %}">
+    <link rel="shortcut icon" type="image/png" href="{% static 'images/favicon.png' %}">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Symbols+Outlined">
+</head>
+<body>
+    <!-- App Bar -->
+    <header class="app-bar">
+        <div class="app-bar-content">
+            <h1 class="app-title">
+                <span class="material-symbols-outlined">garage</span>
+                Гараж
+            </h1>
+            <div style="display: flex; align-items: center; gap: 16px;">
+                <span style="font-size: 14px;">{{ user.username }}</span>
+                <a href="{% url 'logout' %}" class="icon-button" title="Выйти">
+                    <span class="material-symbols-outlined">logout</span>
+                </a>
+                <button class="fab" id="add-car-btn" title="Добавить автомобиль">
+                    <span class="material-symbols-outlined">add</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container">
+            <!-- Cars List -->
+            <div id="cars-list" class="cars-grid">
+                <!-- Cars will be dynamically added here -->
+                <div class="empty-state" id="empty-state">
+                    <span class="material-symbols-outlined">directions_car</span>
+                    <h2>Нет автомобилей</h2>
+                    <p>Добавьте первый автомобиль в гараж</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal: Add/Edit Car -->
+    <div id="car-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modal-title">Добавить автомобиль</h2>
+                <button class="modal-close" id="close-modal">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            <form id="car-form" class="car-form">
+                {% csrf_token %}
+                <input type="hidden" id="car-id" name="id">
+                
+                <div class="form-group">
+                    <label for="brand">Марка *</label>
+                    <input type="text" id="brand" name="brand" required placeholder="Например: Toyota">
+                </div>
+
+                <div class="form-group">
+                    <label for="model">Модель *</label>
+                    <input type="text" id="model" name="model" required placeholder="Например: Camry">
+                </div>
+
+                <div class="form-group">
+                    <label for="vin">VIN *</label>
+                    <input type="text" id="vin" name="vin" required placeholder="17-значный номер">
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="year">Год выпуска</label>
+                        <input type="number" id="year" name="year" min="1900" max="2100" placeholder="Например: 2020">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="power">Мощность (л.с.)</label>
+                        <input type="number" id="power" name="power" min="0" placeholder="Например: 150">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="tire-front">Размер резины перед</label>
+                        <input type="text" id="tire-front" name="tire_front" placeholder="Например: 205/55 R16">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="tire-rear">Размер резины зад</label>
+                        <input type="text" id="tire-rear" name="tire_rear" placeholder="Например: 205/55 R16">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="wipers">Размеры дворников</label>
+                    <input type="text" id="wipers" name="wipers" placeholder="Например: 26/16">
+                </div>
+
+                <div class="form-group">
+                    <label for="notes">Заметки</label>
+                    <textarea id="notes" name="notes" rows="4" placeholder="Дополнительная информация о автомобиле..."></textarea>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" id="cancel-btn">Отмена</button>
+                    <button type="submit" class="btn btn-primary">Сохранить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="{% static 'js/main.js' %}"></script>
+</body>
+</html>
+
