@@ -1039,14 +1039,67 @@ class CarDetailManager {
     }
 
     async saveStockPart() {
+        const nameEl = document.getElementById('stock-part-name');
+        const partCodeEl = document.getElementById('stock-part-code');
+        const manufacturerEl = document.getElementById('stock-part-manufacturer');
+        const quantityEl = document.getElementById('stock-part-quantity');
+        const costEl = document.getElementById('stock-part-cost');
+        const purchaseDateEl = document.getElementById('stock-part-purchase-date');
+        const notesEl = document.getElementById('stock-part-notes');
+        const stockPartIdEl = document.getElementById('stock-part-id');
+
+        if (!nameEl || !partCodeEl || !manufacturerEl || !quantityEl) {
+            alert('Ошибка: не найдены обязательные поля формы');
+            return;
+        }
+
+        const name = nameEl.value.trim();
+        const partCode = partCodeEl.value.trim();
+        const manufacturer = manufacturerEl.value.trim();
+        const quantity = parseInt(quantityEl.value) || 1;
+        
+        // Для cost: обязательное поле
+        const costValue = costEl ? costEl.value.trim() : '';
+        const cost = costValue ? parseFloat(costValue) : 0;
+        
+        const purchaseDate = purchaseDateEl ? (purchaseDateEl.value || null) : null;
+        const notes = notesEl ? (notesEl.value.trim() || null) : null;
+
+        // Валидация обязательных полей
+        if (!name || !partCode || !manufacturer) {
+            alert('Пожалуйста, заполните обязательные поля: Наименование, Код детали и Производитель');
+            return;
+        }
+
+        if (quantity < 1) {
+            alert('Количество должно быть не менее 1');
+            return;
+        }
+
+        // Валидация стоимости (обязательное поле)
+        if (!costValue) {
+            alert('Пожалуйста, укажите стоимость за единицу');
+            return;
+        }
+        
+        if (isNaN(cost) || cost < 0) {
+            alert('Стоимость должна быть числом не менее 0');
+            return;
+        }
+
+        if (cost < 0) {
+            alert('Стоимость не может быть отрицательной');
+            return;
+        }
+
         const formData = {
-            name: document.getElementById('stock-part-name').value.trim(),
-            part_code: document.getElementById('stock-part-code').value.trim(),
-            manufacturer: document.getElementById('stock-part-manufacturer').value.trim(),
-            quantity: parseInt(document.getElementById('stock-part-quantity').value) || 1,
-            cost: document.getElementById('stock-part-cost').value ? parseFloat(document.getElementById('stock-part-cost').value) : null,
-            purchase_date: document.getElementById('stock-part-purchase-date').value || null,
-            notes: document.getElementById('stock-part-notes').value.trim() || null
+            name: name,
+            part_code: partCode,
+            manufacturer: manufacturer,
+            quantity: quantity,
+            cost: cost,
+            purchase_date: purchaseDate,
+            notes: notes
         };
 
         try {
@@ -1056,7 +1109,7 @@ class CarDetailManager {
                 'X-CSRFToken': csrfToken
             };
 
-            const stockPartId = document.getElementById('stock-part-id').value;
+            const stockPartId = stockPartIdEl ? stockPartIdEl.value : '';
             let response;
             if (stockPartId) {
                 response = await fetch(`${this.apiUrl}stock/${stockPartId}/`, {
@@ -1075,21 +1128,52 @@ class CarDetailManager {
             }
 
             if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Ошибка при сохранении');
+                let errorMessage = 'Ошибка при сохранении';
+                const contentType = response.headers.get('content-type');
+                
+                if (contentType && contentType.includes('application/json')) {
+                    try {
+                        const errorData = await response.json();
+                        if (errorData.detail) {
+                            errorMessage = errorData.detail;
+                        } else if (errorData.error) {
+                            errorMessage = errorData.error;
+                        } else if (typeof errorData === 'object') {
+                            // Django validation errors
+                            const errors = [];
+                            for (const [field, messages] of Object.entries(errorData)) {
+                                if (Array.isArray(messages)) {
+                                    errors.push(`${field}: ${messages.join(', ')}`);
+                                } else {
+                                    errors.push(`${field}: ${messages}`);
+                                }
+                            }
+                            errorMessage = errors.join('\n');
+                        }
+                    } catch (e) {
+                        console.error('Error parsing JSON:', e);
+                        errorMessage = `Ошибка ${response.status}: ${response.statusText}`;
+                    }
+                } else {
+                    errorMessage = `Ошибка ${response.status}: ${response.statusText}`;
+                }
+                throw new Error(errorMessage);
             }
 
             await this.loadStockParts();
             // Update stock modal if it's open
-            if (document.getElementById('stock-modal').classList.contains('show')) {
+            const stockModal = document.getElementById('stock-modal');
+            if (stockModal && stockModal.classList.contains('show')) {
                 this.renderStockParts();
             }
             // Update selection in repair modal if it's open (both for new and editing)
-            if (document.getElementById('repair-modal').classList.contains('show')) {
+            const repairModal = document.getElementById('repair-modal');
+            if (repairModal && repairModal.classList.contains('show')) {
                 this.renderStockPartsSelection();
             }
             // Update selection in parts modal if it's open
-            if (document.getElementById('parts-modal').classList.contains('show')) {
+            const partsModal = document.getElementById('parts-modal');
+            if (partsModal && partsModal.classList.contains('show')) {
                 this.renderStockPartsSelectionInPartsModal();
             }
             this.updateTotalCost(); // Обновляем общую стоимость
