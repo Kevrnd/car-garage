@@ -106,8 +106,12 @@ class CarManager {
             if (form) form.reset();
         }
 
-        modal.classList.add('show');
-        document.body.style.overflow = 'hidden';
+        if (modal) {
+            modal.classList.add('show');
+        }
+        if (document.body) {
+            document.body.style.overflow = 'hidden';
+        }
         console.log('Modal opened');
     }
 
@@ -115,23 +119,40 @@ class CarManager {
         const modal = document.getElementById('car-modal');
         const form = document.getElementById('car-form');
         
-        modal.classList.remove('show');
-        document.body.style.overflow = '';
-        form.reset();
+        if (modal) {
+            modal.classList.remove('show');
+        }
+        if (document.body) {
+            document.body.style.overflow = '';
+        }
+        if (form) {
+            form.reset();
+        }
         this.currentEditId = null;
     }
 
     fillForm(car) {
-        document.getElementById('car-id').value = car.id;
-        document.getElementById('brand').value = car.brand || '';
-        document.getElementById('model').value = car.model || '';
-        document.getElementById('vin').value = car.vin || '';
-        document.getElementById('year').value = car.year || '';
-        document.getElementById('power').value = car.power || '';
-        document.getElementById('tire-front').value = car.tire_front || '';
-        document.getElementById('tire-rear').value = car.tire_rear || '';
-        document.getElementById('wipers').value = car.wipers || '';
-        document.getElementById('notes').value = car.notes || '';
+        const carIdEl = document.getElementById('car-id');
+        const brandEl = document.getElementById('brand');
+        const modelEl = document.getElementById('model');
+        const vinEl = document.getElementById('vin');
+        const yearEl = document.getElementById('year');
+        const powerEl = document.getElementById('power');
+        const tireFrontEl = document.getElementById('tire-front');
+        const tireRearEl = document.getElementById('tire-rear');
+        const wipersEl = document.getElementById('wipers');
+        const notesEl = document.getElementById('notes');
+        
+        if (carIdEl) carIdEl.value = car.id;
+        if (brandEl) brandEl.value = car.brand || '';
+        if (modelEl) modelEl.value = car.model || '';
+        if (vinEl) vinEl.value = car.vin || '';
+        if (yearEl) yearEl.value = car.year || '';
+        if (powerEl) powerEl.value = car.power || '';
+        if (tireFrontEl) tireFrontEl.value = car.tire_front || '';
+        if (tireRearEl) tireRearEl.value = car.tire_rear || '';
+        if (wipersEl) wipersEl.value = car.wipers || '';
+        if (notesEl) notesEl.value = car.notes || '';
     }
 
     getCsrfToken() {
@@ -146,20 +167,34 @@ class CarManager {
     }
 
     async saveCar() {
-        const formData = document.getElementById('car-form');
-        const yearValue = document.getElementById('year').value;
-        const powerValue = document.getElementById('power').value;
+        const brandEl = document.getElementById('brand');
+        const modelEl = document.getElementById('model');
+        const vinEl = document.getElementById('vin');
+        const yearEl = document.getElementById('year');
+        const powerEl = document.getElementById('power');
+        const tireFrontEl = document.getElementById('tire-front');
+        const tireRearEl = document.getElementById('tire-rear');
+        const wipersEl = document.getElementById('wipers');
+        const notesEl = document.getElementById('notes');
+        
+        if (!brandEl || !modelEl || !vinEl) {
+            alert('Ошибка: не найдены обязательные поля формы');
+            return;
+        }
+        
+        const yearValue = yearEl ? yearEl.value : '';
+        const powerValue = powerEl ? powerEl.value : '';
         
         const carData = {
-            brand: document.getElementById('brand').value.trim(),
-            model: document.getElementById('model').value.trim(),
-            vin: document.getElementById('vin').value.trim(),
+            brand: brandEl.value.trim(),
+            model: modelEl.value.trim(),
+            vin: vinEl.value.trim(),
             year: yearValue && yearValue.trim() ? parseInt(yearValue) : null,
             power: powerValue && powerValue.trim() ? parseInt(powerValue) : null,
-            tire_front: document.getElementById('tire-front').value.trim() || null,
-            tire_rear: document.getElementById('tire-rear').value.trim() || null,
-            wipers: document.getElementById('wipers').value.trim() || null,
-            notes: document.getElementById('notes').value.trim() || null
+            tire_front: tireFrontEl ? tireFrontEl.value.trim() || null : null,
+            tire_rear: tireRearEl ? tireRearEl.value.trim() || null : null,
+            wipers: wipersEl ? wipersEl.value.trim() || null : null,
+            notes: notesEl ? notesEl.value.trim() || null : null
         };
         
         // Удаляем null значения для необязательных полей, чтобы Django правильно их обработал
@@ -283,19 +318,29 @@ class CarManager {
         const emptyState = document.getElementById('empty-state');
 
         if (this.cars.length === 0) {
-            emptyState.style.display = 'block';
-            container.innerHTML = '';
-            container.appendChild(emptyState);
+            if (emptyState) {
+                emptyState.style.display = 'block';
+            }
+            if (container) {
+                container.innerHTML = '';
+                if (emptyState) {
+                    container.appendChild(emptyState);
+                }
+            }
             return;
         }
 
-        emptyState.style.display = 'none';
-        container.innerHTML = '';
+        if (emptyState) {
+            emptyState.style.display = 'none';
+        }
+        if (container) {
+            container.innerHTML = '';
 
-        this.cars.forEach(car => {
-            const card = this.createCarCard(car);
-            container.appendChild(card);
-        });
+            this.cars.forEach(car => {
+                const card = this.createCarCard(car);
+                container.appendChild(card);
+            });
+        }
     }
 
     createCarCard(car) {
